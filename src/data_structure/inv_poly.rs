@@ -241,10 +241,10 @@ impl InvPoly {
         false
     }
 
-    /// Reduce neighbour terms
+    /// Reduce neighbour terms (Proposition 4)
+    /// @param `graph`: Representing the structure of the graph.
     pub fn reduce_terms(&mut self, graph: &Graph) {
-        for i in 0..config::TERM {
-            let term = &mut self.d[i];
+        for term in self.d.iter_mut() {
             if term.coefficient == 0 {
                 break;
             }
@@ -253,10 +253,12 @@ impl InvPoly {
                 if v_j == 0 || idx == config::K - 1 {
                     break;
                 }
+
                 for &v_k in term.v[idx + 1..].iter() {
                     if v_k == 0 {
                         break;
                     }
+
                     if Self::is_neighbour(v_j, v_k, graph) {
                         term.coefficient = 0;
                         break 'outer;

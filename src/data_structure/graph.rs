@@ -1,22 +1,27 @@
-use crate::config::NUM_VERTEX;
+use crate::config;
 use crate::data_structure::neighbourhood::Neighbourhood;
 
 /// Graph
 #[derive(Copy, Clone, Debug)]
 pub struct Graph {
-    pub vertex: [Neighbourhood; NUM_VERTEX],
+    pub vertex: [Neighbourhood; config::NUM_VERTEX],
 }
 
 impl Default for Graph {
     fn default() -> Self {
         Graph {
-            vertex: [Neighbourhood::default(); NUM_VERTEX],
+            vertex: std::array::from_fn(|i| {
+                let mut neighbour = Neighbourhood::default();
+                neighbour.neighbour[0] = i as u8;
+                neighbour
+            }),
         }
     }
 }
 
 impl Graph {
     /// Sort neighbourhoods per vertex.
+    #[allow(dead_code)]
     fn sort_neighbourhood(&mut self) {
         for vertex in self.vertex.iter_mut() {
             vertex.neighbour.sort_unstable();
@@ -25,29 +30,24 @@ impl Graph {
 
     /// Generate the graph from the public key edges
     ///
-    /// @param edges Array of the public key edges
+    /// @param `public_key`: Array of the public key edges
     /// @return Graph
-    pub fn generate_from(edges: &[[u8; 2]]) -> Self {
-        // Index 0 is the vertex itself, so iterate from 1
-        let mut idx = [1usize; NUM_VERTEX];
+    pub fn generate_from(public_key: &[[u8; 2]]) -> Self {
         let mut graph = Graph::default();
 
-        for (i, v) in graph.vertex.iter_mut().enumerate() {
-            v.neighbour[0] = i as u8;
+        // Set neighbourhoods
+        for edge in public_key {
+            let v1 = edge[0] as usize;
+            let v2 = edge[1] as usize;
+
+            // TODO: Handle vertex 0 cases
+            if let Some(position) = graph.vertex[v1].neighbour.iter().position(|&n| n == 0) {
+                graph.vertex[v1].neighbour[position] = v2 as u8;
+            }
+            if let Some(position) = graph.vertex[v2].neighbour.iter().position(|&n| n == 0) {
+                graph.vertex[v2].neighbour[position] = v1 as u8;
+            }
         }
-
-        for edge in edges {
-            let a = edge[0] as usize;
-            let b = edge[1] as usize;
-
-            graph.vertex[a].neighbour[idx[a]] = b as u8;
-            idx[a] += 1;
-            graph.vertex[b].neighbour[idx[b]] = a as u8;
-            idx[b] += 1;
-        }
-
-        // Sort neighbourhoods per vertex
-        graph.sort_neighbourhood();
 
         graph
     }
