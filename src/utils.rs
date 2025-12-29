@@ -17,7 +17,7 @@ impl InvPoly {
             write!(output, "{:>10} | ", d.coefficient).unwrap();
 
             for v in d.v.iter().filter(|&&v| v != 0) {
-                write!(output, "{:3} ", v).unwrap();
+                write!(output, "{:>3} ", v).unwrap();
             }
             output.push('\n');
 

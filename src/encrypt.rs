@@ -20,7 +20,6 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
 
     // Temporary InvPoly for hiding phase
     let mut tmp = InvPoly::default();
-    let mut length = 0usize;
 
     let start = std::time::Instant::now();
     p1.gen_degree_k(
@@ -63,17 +62,17 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     println!("> Sort variables time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    tmp.reduce_terms(&graph, &mut length);
+    tmp.reduce_terms(&graph);
     let elapsed = start.elapsed();
     println!("> Reduce term times: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    tmp.sum_coefficients(cipher_text, &mut length);
+    tmp.sum_coefficients(cipher_text);
     let elapsed = start.elapsed();
     println!("> Sum coefficients time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    cipher_text.shuffle(length, &mut rng);
+    cipher_text.shuffle(&mut rng);
     let elapsed = start.elapsed();
     println!("> Shuffle terms time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 }

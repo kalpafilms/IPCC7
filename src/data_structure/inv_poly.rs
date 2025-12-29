@@ -3,6 +3,7 @@ use crate::data_structure::graph::Graph;
 use crate::data_structure::poly_d::PolyD;
 
 use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 use rand::Rng;
 use std::fmt;
 
@@ -264,11 +265,10 @@ impl InvPoly {
     }
 
     /// Reduce neighbour terms
-    pub fn reduce_terms(&mut self, graph: &Graph, length: &mut usize) {
+    pub fn reduce_terms(&mut self, graph: &Graph) {
         for i in 0..config::TERM {
             let term = &mut self.d[i];
             if term.coefficient == 0 {
-                *length = i - 1;
                 break;
             }
 
@@ -290,14 +290,16 @@ impl InvPoly {
     }
 
     /// Sum coefficients of polynomial terms to reduce duplicates
-    pub fn sum_coefficients(&mut self, cipher_text: &mut InvPoly, length: &mut usize) {
+    pub fn sum_coefficients(&mut self, cipher_text: &mut InvPoly) {
+        let length = self.count_terms();
+
         // Identify and mark duplicates by setting coefficients to 0
-        for i in 0..*length {
+        for i in 0..length - 1 {
             if self.d[i].coefficient == 0 {
                 continue;
             }
 
-            for j in i + 1..*length + 1 {
+            for j in i + 1..length {
                 if self.d[j].coefficient == 0 {
                     continue;
                 }
@@ -311,7 +313,7 @@ impl InvPoly {
 
         // Copy non-zero terms to the result
         let mut cnt = 0usize;
-        for i in 0..*length + 1 {
+        for i in 0..length {
             if self.d[i].coefficient != 0 {
                 cipher_text.d[cnt].coefficient = self.d[i].coefficient;
                 for j in 0..config::K {
@@ -320,14 +322,13 @@ impl InvPoly {
                 cnt += 1;
             }
         }
-        *length = cnt - 1;
     }
 
     /// Shuffle polynomial terms to hide the degree of the polynomial
-    pub fn shuffle(&mut self, length: usize, rng: &mut StdRng) {
-        for i in 0..length {
-            let idx = rng.random_range(i..length + 1);
-            self.d.swap(i, idx);
+    pub fn shuffle(&mut self, rng: &mut StdRng) {
+        let length = self.count_terms();
+        if length > 1 {
+            self.d[0..length].shuffle(rng);
         }
     }
 
