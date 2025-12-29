@@ -52,17 +52,12 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     println!("> Combine time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    cipher_text.reduce_degree_to(&mut tmp);
+    cipher_text.reduce_degree();
     let elapsed = start.elapsed();
     println!("> Reduce degrees time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    tmp.sort_variable();
-    let elapsed = start.elapsed();
-    println!("> Sort variables time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
-
-    let start = std::time::Instant::now();
-    tmp.reduce_terms(&graph);
+    cipher_text.reduce_terms(&graph);
     let elapsed = start.elapsed();
     println!("> Reduce term times: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 

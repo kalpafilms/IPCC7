@@ -5,6 +5,8 @@ use std::fmt::Write;
 
 impl InvPoly {
     /// Print the given number of polynomials
+    ///
+    /// @param `length_to_print`: The maximum number of terms to print from
     #[allow(dead_code)]
     fn print_terms(&self, length_to_print: usize) {
         let mut output = String::new();
@@ -30,13 +32,15 @@ impl InvPoly {
         println!("{}", output);
     }
 
-    /// Print the polynomial
+    /// Print all terms from the polynomial
     #[allow(dead_code)]
     pub fn print(&self) {
         self.print_terms(self.d.len());
     }
 
-    /// Print the given number of polynomials
+    /// Print the given number of terms from the polynomials
+    ///
+    /// @param `length_to_print`: The maximum number of terms to print
     #[allow(dead_code)]
     pub fn print_first(&self, length_to_print: usize) {
         self.print_terms(length_to_print);

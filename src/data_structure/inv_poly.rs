@@ -163,6 +163,8 @@ impl InvPoly {
     }
 
     /// Combine two polynomials
+    /// @param `p1`: A reference to the first invariable polynomial to combine.
+    /// @param `p2`: A reference to the second invariable polynomial to combine.
     pub fn combine_from(&mut self, p1: &Self, p2: &Self) {
         let mut cnt = 0;
 
@@ -185,62 +187,37 @@ impl InvPoly {
     }
 
     /// Reduces the degree of terms by keeping only unique variables.
-    pub fn reduce_degree_to(&mut self, result: &mut Self) {
+    pub fn reduce_degree(&mut self) {
+        // Transfer values to a temporary object, and clear self.
+        let source = std::mem::take(self);
+
         for i in 0..config::TERM {
-            if self.d[i].coefficient == 0 {
+            let mut src_term = source.d[i];
+            if src_term.coefficient == 0 {
                 break;
             }
 
-            let mut offset = 1usize;
-            result.d[i].coefficient = self.d[i].coefficient;
-            result.d[i].v[0] = self.d[i].v[0];
+            // Sort vertices ascending, but treat 0 as the largest value to push padding to the end
+            src_term.v.sort_unstable_by_key(|&v| if v == 0 { u8::MAX } else { v });
 
-            for j in 1..config::K - 1 {
-                for k in j..config::K {
-                    if self.d[i].v[j] != self.d[i].v[k] {
-                        let mut check = false;
+            let mut offset = 0usize;
+            let dest_term = &mut self.d[i];
+            dest_term.coefficient = src_term.coefficient;
 
-                        for l in 0..config::K {
-                            if result.d[i].v[l] == self.d[i].v[j] {
-                                check = true;
-                            }
-                        }
-                        if !check {
-                            result.d[i].v[offset] = self.d[i].v[j];
-                            offset += 1;
-                        }
-                        if offset == config::K {
-                            break;
-                        }
+            let mut last_vertex: Option<u8> = None;
+            for &v in src_term.v.iter() {
+                // Break if the variable is 0, as it is considered as the padding value
+                if v == 0 || offset == config::K {
+                    break;
+                }
 
-                        check = false;
-                        for l in 0..config::K {
-                            if result.d[i].v[l] == self.d[i].v[k] {
-                                check = true;
-                            }
-                        }
-                        if !check {
-                            result.d[i].v[offset] = self.d[i].v[k];
-                            offset += 1;
-                        }
-                        if offset == config::K {
-                            break;
-                        }
-                    }
+                // Since `src_term.v` is sorted, we only need to compare the last added vertex
+                if Some(v) != last_vertex {
+                    dest_term.v[offset] = v;
+                    offset += 1;
+                    last_vertex = Some(v);
                 }
             }
-        }
-    }
-
-    /// Sort the variables in each term
-    pub fn sort_variable(&mut self) {
-        // Note: original one uses manual O(K^2) bubble sort, but sort_unstable O(K log K)
-        for term in self.d.iter_mut() {
-            if term.coefficient == 0 {
-                break;
-            }
-            // Sort variables ascending, but treat 0 as the largest value to push padding to the end
-            term.v.sort_unstable_by_key(|&v| if v == 0 { u8::MAX } else { v });
         }
     }
 

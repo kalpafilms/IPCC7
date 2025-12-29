@@ -19,8 +19,9 @@ pub fn key_gen(public_key: &mut [[u8; 2]], secret_key: &mut [u8]) {
         }
     }
 
-    // Choose PDS 1 as the secret key
-    secret_key.copy_from_slice(&pdses[0]);
+    // Choose a PDS, which does not contain 0, as the secret key
+    let selected = pdses.iter().find(|pds| !pds.contains(&0u8)).unwrap();
+    secret_key.copy_from_slice(selected);
 
     // Connect vertices between PDSes
     let pds_pairs = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)];
