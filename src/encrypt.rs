@@ -18,9 +18,6 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     let mut m1 = 10u32;
     let mut m2 = *message / m1;
 
-    // Temporary InvPoly for hiding phase
-    let mut tmp = InvPoly::default();
-
     let start = std::time::Instant::now();
     p1.gen_degree_k(
         &graph,
@@ -62,7 +59,7 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     println!("> Reduce term times: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    tmp.sum_coefficients(cipher_text);
+    cipher_text.sum_coefficients();
     let elapsed = start.elapsed();
     println!("> Sum coefficients time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 

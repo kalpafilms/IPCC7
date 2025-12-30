@@ -269,7 +269,7 @@ impl InvPoly {
     }
 
     /// Sum coefficients of polynomial terms to reduce duplicates
-    pub fn sum_coefficients(&mut self, cipher_text: &mut InvPoly) {
+    pub fn sum_coefficients(&mut self) {
         let length = self.count_terms();
 
         // Identify and mark duplicates by setting coefficients to 0
@@ -285,19 +285,23 @@ impl InvPoly {
 
                 let is_duplicate = self.d[i].v[0..config::K] == self.d[j].v[0..config::K];
                 if is_duplicate {
+                    // Sum the coefficient into the first occurrence and mark current as 0
+                    let d_i_coeff = self.d[i].coefficient as u64;
+                    let d_j_coeff = self.d[j].coefficient as u64;
+                    self.d[i].coefficient = ((d_i_coeff + d_j_coeff) % config::Q as u64) as u32;
                     self.d[j].coefficient = 0;
                 }
             }
         }
 
+        // Transfer values to a temporary object, and clear self.
+        let source = std::mem::take(self);
+
         // Copy non-zero terms to the result
         let mut cnt = 0usize;
         for i in 0..length {
-            if self.d[i].coefficient != 0 {
-                cipher_text.d[cnt].coefficient = self.d[i].coefficient;
-                for j in 0..config::K {
-                    cipher_text.d[cnt].v[j] = self.d[i].v[j];
-                }
+            if source.d[i].coefficient != 0 {
+                self.d[cnt] = source.d[i];
                 cnt += 1;
             }
         }
