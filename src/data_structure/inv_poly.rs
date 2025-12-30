@@ -316,34 +316,24 @@ impl InvPoly {
     }
 
     /// Decrypt the cipher text polynomial
-    pub fn decrypt(&self, pds: [u8; config::NUM_VERTEX]) -> u32 {
-        let mut decrypted = 0u64;
+    pub fn decrypt_by(&self, pds: [u8; config::NUM_VERTEX]) -> u32 {
+        let mut plain_text = 0u64;
 
-        for i in 0..config::TERM {
-            if i >= self.d.len() {
-                break;
-            }
-
-            let term = &self.d[i];
-            // Break if coefficients are zero (end of terms)
+        for term in self.d.iter() {
             if term.coefficient == 0 {
-                break;
+                continue;
             }
 
-            let mut sign = 1i64;
-            for j in 0..config::K {
-                let v_val = term.v[j];
-                if v_val != 0 {
-                    sign *= pds[v_val as usize] as i64;
+            let mut tmp = term.coefficient as u64;
+            for i in 0..config::K {
+                let neighbour = term.v[i];
+                if neighbour != 0 {
+                    tmp *= pds[neighbour as usize] as u64;
                 }
             }
-
-            // Use rem_euclid to handle modular arithmetic with potential negative signs
-            let temp = (term.coefficient as i64) * sign;
-            let next_val = (decrypted as i64 + temp).rem_euclid(config::Q as i64);
-            decrypted = next_val as u64;
+            plain_text += tmp;
         }
 
-        decrypted as u32
+        plain_text.rem_euclid(config::Q as u64) as u32
     }
 }

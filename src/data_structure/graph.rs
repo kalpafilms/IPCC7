@@ -40,12 +40,11 @@ impl Graph {
             let v1 = edge[0] as usize;
             let v2 = edge[1] as usize;
 
-            // TODO: Handle vertex 0 cases
-            if let Some(position) = graph.vertex[v1].neighbour.iter().position(|&n| n == 0) {
-                graph.vertex[v1].neighbour[position] = v2 as u8;
+            if let Some(neighbour) = graph.vertex[v1].neighbour.iter_mut().find(|&&mut n| n == 0) {
+                *neighbour = v2 as u8;
             }
-            if let Some(position) = graph.vertex[v2].neighbour.iter().position(|&n| n == 0) {
-                graph.vertex[v2].neighbour[position] = v1 as u8;
+            if let Some(neighbour) = graph.vertex[v2].neighbour.iter_mut().find(|&&mut n| n == 0) {
+                *neighbour = v1 as u8;
             }
         }
 
