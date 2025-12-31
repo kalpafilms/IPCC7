@@ -270,45 +270,28 @@ impl InvPoly {
 
     /// Sum coefficients of polynomial terms to reduce duplicates
     pub fn sum_coefficients(&mut self) {
-        let length = self.count_terms();
+        // Sort the polynomial terms by its vertices
+        self.d.sort_unstable_by_key(|d| d.v);
 
-        // Identify and mark duplicates by setting coefficients to 0
-        for i in 0..length - 1 {
-            if self.d[i].coefficient == 0 {
-                continue;
-            }
-
-            for j in i + 1..length {
-                if self.d[j].coefficient == 0 {
-                    continue;
-                }
-
-                let is_duplicate = self.d[i].v[0..config::K] == self.d[j].v[0..config::K];
-                if is_duplicate {
-                    // Sum the coefficient into the first occurrence and mark current as 0
-                    let d_i_coeff = self.d[i].coefficient as u64;
-                    let d_j_coeff = self.d[j].coefficient as u64;
-                    self.d[i].coefficient = ((d_i_coeff + d_j_coeff) % config::Q as u64) as u32;
-                    self.d[j].coefficient = 0;
-                }
-            }
-        }
-
-        // Transfer values to a temporary object, and clear self.
-        let source = std::mem::take(self);
-
-        // Copy non-zero terms to the result
-        let mut cnt = 0usize;
-        for i in 0..length {
-            if source.d[i].coefficient != 0 {
-                self.d[cnt] = source.d[i];
-                cnt += 1;
+        let mut write_idx = 0usize;
+        for read_idx in 1..config::TERM {
+            if self.d[read_idx].coefficient == 0 { continue; }
+            if self.d[read_idx].v == self.d[write_idx].v {
+                let write_coefficient = self.d[write_idx].coefficient as u64;
+                let read_coefficient = self.d[read_idx].coefficient as u64;
+                self.d[write_idx].coefficient = ((write_coefficient + read_coefficient) % config::Q as u64) as u32;
+                self.d[read_idx].coefficient = 0;
+            } else {
+                write_idx = read_idx;
             }
         }
     }
 
     /// Shuffle polynomial terms to hide the degree of the polynomial
     pub fn shuffle(&mut self, rng: &mut StdRng) {
+        // Push zero-coefficient terms to the end of the array
+        self.d.sort_unstable_by_key(|d| d.coefficient == 0);
+
         let length = self.count_terms();
         if length > 1 {
             self.d[0..length].shuffle(rng);
