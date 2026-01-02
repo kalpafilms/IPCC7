@@ -1,70 +1,49 @@
 use crate::config;
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
 
 /// Generate public and secret keys
 ///
 /// @param `public_key`: 2D array to store the generated public key
 /// @param `secret_key`: 1D array to store the generated secret key
 pub fn key_gen(public_key: &mut [[u8; 2]], secret_key: &mut [u8]) {
-    // Generate for Secret Key PDS
-    let mut shuffled_index = [0u8; config::NUM_VERTEX];
-    shuffle(&mut shuffled_index);
+    // Use the cryptographic RNG(CSPRNG)
+    let mut rng = StdRng::from_os_rng();
+
+    // Generate shuffled vertices for PDSes
+    let mut shuffled_index: [u8; config::NUM_VERTEX] = std::array::from_fn(|i| i as u8);
+    shuffled_index.shuffle(&mut rng);
 
     // Generate 4 PDSes (r + 1 PDSes)
     let mut pdses = [[0u8; config::NUM_PDS]; config::NEIGHBOURHOOD];
-    for i in 0..config::NEIGHBOURHOOD {
-        for j in 0..config::NUM_PDS {
-            pdses[i][j] = shuffled_index[config::NEIGHBOURHOOD * j + i];
+    // Since `shuffled_index` is already shuffled, so handle vertices as chunks instead of single elements.
+    // Set `chunks_exact` as the outer loop to prevent re-calculating the chunks.
+    for (i, chunk) in shuffled_index.chunks_exact(config::NEIGHBOURHOOD).enumerate() {
+        for (pds, &vertex) in pdses.iter_mut().zip(chunk) {
+            pds[i] = vertex;
         }
     }
 
     // Choose a PDS, which does not contain 0, as the secret key
-    let selected = pdses.iter().find(|pds| !pds.contains(&0u8)).unwrap();
+    // This guarantees that only one PDS contains vertex 0, since the vertex indices are 0 to 255.
+    let selected = pdses.iter()
+        .find(|pds| !pds.contains(&0))
+        .expect("At least one PDS does not contain vertex 0");
     secret_key.copy_from_slice(selected);
 
-    // Connect vertices between PDSes
-    let pds_pairs = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)];
-    for (pair_idx, (pds1_idx, pds2_idx)) in pds_pairs.iter().copied().enumerate() {
-        for i in 0..config::NUM_PDS {
-            add_edges(
-                public_key,
-                pair_idx * config::NUM_PDS + i,
-                pdses[pds1_idx][i],
-                pdses[pds2_idx][i],
-            );
+    // Six random one-to-one correspondences between the PDSes
+    let mut key_chunks = public_key.chunks_mut(config::NUM_PDS);
+    // (pds1, pds2): [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+    for pds1 in 0..config::NEIGHBOURHOOD {
+        for pds2 in (pds1 + 1)..config::NEIGHBOURHOOD {
+            if let Some(chunk) = key_chunks.next() {
+                for i in 0..config::NUM_PDS {
+                    let v1 = pdses[pds1][i];
+                    let v2 = pdses[pds2][i];
+                    chunk[i] = if v1 < v2 { [v1, v2] } else { [v2, v1] };
+                }
+            }
         }
     }
-}
-
-/// Shuffle the given array using the Fisher-Yates shuffle algorithm
-///
-/// @param `arr`: Array to shuffle
-fn shuffle(arr: &mut [u8]) {
-    // Use the cryptographic RNG(CSPRNG)
-    let mut rng = StdRng::from_os_rng();
-
-    // Fill the array from 0 to (length - 1)
-    for i in 0..arr.len() {
-        arr[i] = i as u8;
-    }
-
-    // Fisher-Yates shuffle algorithm
-    for i in 0..(arr.len() - 1) {
-        let index = rng.random_range(0..arr.len());
-        arr.swap(i, index);
-    }
-}
-
-/// Add a graph edge to the edge array.
-///
-/// @param `edges`: 2D array of edges
-/// @param `idx`: Index of the edge array where to store the edge
-/// @param `v1`: Vertex 1
-/// @param `v2`: Vertex 2
-fn add_edges(edges: &mut [[u8; 2]], idx: usize, v1: u8, v2: u8) {
-    let high = v1.max(v2);
-    let low = v1.min(v2);
-
-    edges[idx] = [low, high];
 }
