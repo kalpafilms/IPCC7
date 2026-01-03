@@ -25,6 +25,8 @@ pub const TERM: usize = 65535;
 // Each vertex from a 3-regular graph has 4 neighbourhoods
 pub const NEIGHBOURHOOD: usize = 4;
 
-pub const Q: u32 = 2147483648;
+// Message space \mathbb{Z}_p
+pub const P: u32 = 2_147_483_648;
 
+// A parameter used for generating invariant polynomials of degree 1
 pub const N_E: u8 = 3;

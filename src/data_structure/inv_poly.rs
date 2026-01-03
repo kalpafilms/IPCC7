@@ -50,7 +50,7 @@ impl InvPoly {
         rng: &mut StdRng,
     ) {
         let mut vertex_number = rng.random_range(0..=u8::MAX);
-        let coefficient = rng.random_range(0..config::Q);
+        let coefficient = rng.random_range(0..config::P);
         // Find the first empty term in the polynomial
         let last_index = self
             .d
@@ -79,7 +79,7 @@ impl InvPoly {
 
         // Update the value
         *value += coefficient;
-        *value %= config::Q;
+        *value %= config::P;
     }
 
     /// Generate an Invariant Polynomial of degree k
@@ -110,7 +110,7 @@ impl InvPoly {
             let mp = if k == max_k {
                 *message
             } else {
-                rng.random_range(0..config::Q)
+                rng.random_range(0..config::P)
             };
             let vertex_number = if depend {
                 std::iter::repeat_with(|| rng.random_range(0..=u8::MAX))
@@ -143,13 +143,13 @@ impl InvPoly {
                     rng,
                 );
 
-                a[i] = (*value + config::Q - mp) % config::Q;
+                a[i] = (*value + config::P - mp) % config::P;
                 *value = mp;
 
                 // Update polynomial terms: append or update existing terms
                 for term in self.d.iter_mut() {
                     if term.coefficient == 0 {
-                        term.coefficient = config::Q - a[i];
+                        term.coefficient = config::P - a[i];
                         for j in 0..k {
                             term.v[j] = graph.vertex[vertex_number as usize].neighbour[i];
                         }
@@ -166,22 +166,25 @@ impl InvPoly {
     /// @param `p1`: A reference to the first invariable polynomial to combine.
     /// @param `p2`: A reference to the second invariable polynomial to combine.
     pub fn combine_from(&mut self, p1: &Self, p2: &Self) {
-        let mut cnt = 0;
+        // Pre-filter out 0 terms to avoid re-calculating them inside the nested loop.
+        let p1_terms: Vec<&PolyD> = p1.d.iter()
+                .filter(|d| d.coefficient != 0)
+                .collect();
+        let p2_terms: Vec<&PolyD> = p2.d.iter()
+                .filter(|d| d.coefficient != 0)
+                .collect();
 
         // Iterate through terms that have non-zero coefficients
-        for d1 in p1.d.iter().filter(|d| d.coefficient != 0) {
-            for d2 in p2.d.iter().filter(|d| d.coefficient != 0) {
-                // Handle overflow: InvPoly.d.len() == config::TERM
-                if cnt >= config::TERM {
+        let mut target = self.d.iter_mut();
+        for d1 in p1_terms {
+            for d2 in p2_terms.iter() {
+                if let Some(target) = target.next() {
+                    target.coefficient = ((d1.coefficient as u64 * d2.coefficient as u64) % config::P as u64) as u32;
+                    target.v[..config::K1].copy_from_slice(&d1.v[..config::K1]);
+                    target.v[config::K1..].copy_from_slice(&d2.v[..config::K2]);
+                } else {
                     return;
                 }
-
-                let target = &mut self.d[cnt];
-                target.coefficient = ((d1.coefficient as u64 * d2.coefficient as u64) % config::Q as u64) as u32;
-                target.v[..config::K1].copy_from_slice(&d1.v[..config::K1]);
-                target.v[config::K1..].copy_from_slice(&d2.v[..config::K2]);
-
-                cnt += 1;
             }
         }
     }
@@ -279,7 +282,7 @@ impl InvPoly {
             if self.d[read_idx].v == self.d[write_idx].v {
                 let write_coefficient = self.d[write_idx].coefficient as u64;
                 let read_coefficient = self.d[read_idx].coefficient as u64;
-                self.d[write_idx].coefficient = ((write_coefficient + read_coefficient) % config::Q as u64) as u32;
+                self.d[write_idx].coefficient = ((write_coefficient + read_coefficient) % config::P as u64) as u32;
                 self.d[read_idx].coefficient = 0;
             } else {
                 write_idx = read_idx;
@@ -317,6 +320,6 @@ impl InvPoly {
             plain_text += tmp;
         }
 
-        plain_text.rem_euclid(config::Q as u64) as u32
+        plain_text.rem_euclid(config::P as u64) as u32
     }
 }
