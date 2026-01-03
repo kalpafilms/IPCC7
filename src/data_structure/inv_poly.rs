@@ -90,25 +90,13 @@ impl InvPoly {
         vertex_list: &mut [u8],
         value: &mut u32,
         k: usize,
-        message: &u32,
+        message: u32,
         max_k: usize,
         rng: &mut StdRng,
     ) {
-        if k == 1 {
-            let (cnt, idx) = if depend {
-                let v = (rng.random_range(0..u8::MAX) % config::N_E) + 1;
-                (v, Some(rng.random_range(0..v)))
-            } else {
-                (rng.random_range(0..config::NEIGHBOURHOOD as u8), None)
-            };
-
-            for i in 0..cnt {
-                let is_depend = idx.map_or(false, |s| i == s);
-                self.gen_degree_1(graph, is_depend, vertex_list, value, rng);
-            }
-        } else if k > 1 {
+        if k > 1 {
             let mp = if k == max_k {
-                *message
+                message
             } else {
                 rng.random_range(0..config::P)
             };
@@ -158,6 +146,18 @@ impl InvPoly {
                         term.v[k - 1] = graph.vertex[vertex_number as usize].neighbour[i];
                     }
                 }
+            }
+        } else if k == 1 {
+            let (cnt, idx) = if depend {
+                let v = (rng.random_range(0..u8::MAX) % config::N_E) + 1;
+                (v, Some(rng.random_range(0..v)))
+            } else {
+                (rng.random_range(0..config::NEIGHBOURHOOD as u8), None)
+            };
+
+            for i in 0..cnt {
+                let is_depend = idx.map_or(false, |s| i == s);
+                self.gen_degree_1(graph, is_depend, vertex_list, value, rng);
             }
         }
     }

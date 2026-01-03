@@ -13,30 +13,30 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     let mut vertex_list = [0u8; config::NUM_VERTEX];
     let mut value = 0u32;
 
-    let mut p1 = InvPoly::default();
-    let mut p2 = InvPoly::default();
-    let mut m1 = 10u32;
-    let mut m2 = *message / m1;
+    let mut g1 = InvPoly::default();
+    let mut g2 = InvPoly::default();
+    let m1 = 10u32;
+    let m2 = *message / m1;
 
     let start = std::time::Instant::now();
-    p1.gen_degree_k(
+    g1.gen_degree_k(
         &graph,
         true,
         &mut vertex_list,
         &mut value,
         config::K1,
-        &mut m1,
+        m1,
         config::K1,
         &mut rng,
     );
     vertex_list.fill(0);
-    p2.gen_degree_k(
+    g2.gen_degree_k(
         &graph,
         true,
         &mut vertex_list,
         &mut value,
         config::K2,
-        &mut m2,
+        m2,
         config::K2,
         &mut rng,
     );
@@ -44,7 +44,7 @@ pub fn encrypt(cipher_text: &mut InvPoly, message: &u32, public_key: &[[u8; 2]])
     println!("> EncDegK time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
     let start = std::time::Instant::now();
-    cipher_text.combine_from(&p1, &p2);
+    cipher_text.combine_from(&g1, &g2);
     let elapsed = start.elapsed();
     println!("> Combine time: {:.3} ms", elapsed.as_secs_f64() * 1000.0);
 
