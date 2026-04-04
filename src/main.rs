@@ -10,6 +10,8 @@ use decrypt::decrypt;
 use encrypt::encrypt;
 use key_gen::key_gen;
 
+use tick_counter::TickCounter;
+
 fn main() {
     // Message to encrypt from argument
     let args: Vec<String> = std::env::args().collect();
@@ -22,7 +24,9 @@ fn main() {
     // Cipher text
     let mut cipher_text = InvPoly::default();
 
+    // Counters
     let total_start = std::time::Instant::now();
+    let cycle_start = TickCounter::current();
 
     // Key generation
     let start = std::time::Instant::now();
@@ -44,6 +48,8 @@ fn main() {
 
     let total_elapsed = total_start.elapsed();
     println!("Total execution time: {:.3} ms", total_elapsed.as_secs_f64() * 1000.0);
+    let cycle_elapsed = cycle_start.elapsed();
+    println!("Total clock cycle: {}", cycle_elapsed);
 
     println!(">> Decrypted message: {}", decrypted);
 }

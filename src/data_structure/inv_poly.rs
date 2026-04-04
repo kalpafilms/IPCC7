@@ -200,7 +200,7 @@ impl InvPoly {
                 break;
             }
 
-            // Sort vertices ascending, but treat 0 as the largest value to push padding to the end
+            // Sort variables ascending, but treat 0 as the largest value to push padding to the end
             src_term.v.sort_unstable_by_key(|&v| if v == 0 { u8::MAX } else { v });
 
             let mut offset = 0usize;
@@ -224,7 +224,8 @@ impl InvPoly {
         }
     }
 
-    /// Determine if two vertices are neighbours
+    /// Determine if two variables are neighbours
+    /// MARK: Bitset lookup table? O(N) -> O(1), N=4
     fn is_neighbour(v1: u8, v2: u8, graph: &Graph) -> bool {
         let n1 = graph.vertex[v1 as usize].neighbour;
         let n2 = graph.vertex[v2 as usize].neighbour;
@@ -273,7 +274,7 @@ impl InvPoly {
 
     /// Sum coefficients of polynomial terms to reduce duplicates
     pub fn sum_coefficients(&mut self) {
-        // Sort the polynomial terms by its vertices
+        // Sort the polynomial terms by its variables
         self.d.sort_unstable_by_key(|d| d.v);
 
         let mut write_idx = 0usize;
